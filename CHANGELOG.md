@@ -1,8 +1,10 @@
 # Changelog
 
-## [2.1.0-rc.2] - Unreleased
+## [2.1.0-rc.3] - Unreleased
 
 ### Adicionado
+
+- Rota `GET /api/v1/health`, que responde 200 sem tocar no catalogo (RC que ficou para a proxima release).
 
 - Parâmetro `q` em `GET /api/v1/emojis`, que filtra o catálogo por trecho do nome, sem diferenciar maiúsculas de minúsculas. O filtro é aplicado antes do recorte.
 - Parâmetros `limit` e `offset` em `GET /api/v1/emojis`, para recortar a listagem. Informar só um dos dois é válido; sem nenhum dos dois, a coleção inteira é devolvida.
