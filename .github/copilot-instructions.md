@@ -164,6 +164,8 @@ describe("GET /api/v1/emojis", () => {
 });
 ```
 
+A ordem, o conjunto ou o valor que um teste espera é escrito à mão, nunca derivado chamando a mesma função (ou uma parecida com a) que a produção usa. Derivar repete a regra em vez de prová-la, e passa verde quando teste e produção divergem.
+
 **Meta de cobertura:** ver `COVERAGE_TARGET` em `.github/scripts/coverage.sh` — é de lá que `/test` e `/status` a leem
 
 ---
