@@ -118,6 +118,19 @@ describe("GET /api/v1/emojis?sort", () => {
     expect(res.body).toEqual([POR_NOME[0]]);
   });
 
+  it("sorts what q let through, and nothing else", async () => {
+    const res = await request(app).get("/api/v1/emojis?q=r&sort=nome").expect(200);
+    const esperado = CATALOGO
+      .filter(e => e.name.includes("r"))
+      .sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
+    expect(res.body).toEqual(esperado);
+  });
+
+  it("keeps X-Total-Count as the post-filter total when sort is given", async () => {
+    const res = await request(app).get("/api/v1/emojis?q=r&sort=-nome").expect(200);
+    expect(res.headers["x-total-count"]).toBe("3");
+  });
+
   it("rejects an unknown sort value naming the parameter", async () => {
     const res = await request(app)
       .get("/api/v1/emojis?sort=char")
