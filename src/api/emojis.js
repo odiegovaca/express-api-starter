@@ -63,7 +63,7 @@ router.get("/", (req, res) => {
   // ficaria ordenada, e a segunda traria nomes menores que a primeira.
   const ordenados = sort === undefined
     ? filtrados
-    : [...filtrados].sort((a, b) => sort === "-nome"
+    : filtrados.sort((a, b) => sort === "-nome"
         ? colacao.compare(b.name, a.name)
         : colacao.compare(a.name, b.name));
 
