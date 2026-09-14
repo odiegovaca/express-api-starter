@@ -1,6 +1,6 @@
 # Changelog
 
-## [2.1.0-rc.2] - Unreleased
+## [3.0.0] - 14/09/2026
 
 ### Adicionado
 
