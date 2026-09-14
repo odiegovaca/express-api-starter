@@ -8,6 +8,7 @@
 - Parâmetros `limit` e `offset` em `GET /api/v1/emojis`, para recortar a listagem. Informar só um dos dois é válido; sem nenhum dos dois, a coleção inteira é devolvida.
 - Cabeçalho `X-Total-Count` em toda resposta de `GET /api/v1/emojis`, com o total **após** o filtro de `q` — é por ele que o cliente sabe se ainda há páginas adiante.
 - Validação de `q` (1 a 50 caracteres), `limit` (inteiro, 1 a 100) e `offset` (inteiro, ≥ 0), com resposta 400 nomeando o parâmetro recusado.
+- Seção `API` no `README.md`, listando as rotas expostas e seus parâmetros.
 
 ### Modificado
 
