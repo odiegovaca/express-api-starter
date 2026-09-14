@@ -1,7 +1,10 @@
 import { z } from "zod/v4";
 
 const envSchema = z.object({
-  NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
+  // Default seguro: sem NODE_ENV definido o app se comporta como producao.
+  // Com o default anterior ("development"), esquecer a variavel no deploy fazia
+  // o errorHandler devolver a pilha completa em todo 404 e 400.
+  NODE_ENV: z.enum(["development", "production", "test"]).default("production"),
   PORT: z.coerce.number().default(3000),
 });
 

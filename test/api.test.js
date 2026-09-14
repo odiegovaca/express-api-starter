@@ -71,7 +71,7 @@ describe("GET /api/v1/emojis", () => {
   });
 
   it.each(["", "?limit=2", "?offset=1", "?limit=1&offset=1", "?offset=99"])(
-    "reports the full collection size in X-Total-Count for %s",
+    "reports the filtered total in X-Total-Count for %s",
     async (query) => {
       const res = await request(app).get(`/api/v1/emojis${query}`);
       expect(res.headers["x-total-count"]).toBe("3");

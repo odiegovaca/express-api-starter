@@ -47,7 +47,7 @@ router.get("/", (req, res) => {
   // tamanho imprevisivel e esconderia resultado que caiu fora da primeira.
   const filtrados = q === undefined
     ? EMOJIS
-    : EMOJIS.filter(emoji => emoji.name.includes(q.toLowerCase()));
+    : EMOJIS.filter(emoji => emoji.name.toLowerCase().includes(q.toLowerCase()));
 
   // RN02: o total e o do resultado do filtro, nao o da colecao crua.
   res.set("X-Total-Count", String(filtrados.length));
