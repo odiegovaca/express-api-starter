@@ -1,12 +1,16 @@
 # Changelog
 
-## [4.0.0-rc.1] - Unreleased
+## [4.0.0-rc.2] - Unreleased
 
 ### Adicionado
 
 - Parâmetro `sort` em `GET /api/v1/emojis`, com os valores `nome` e `-nome`, que devolve a listagem ordenada pelo nome do emoji em ordem crescente ou decrescente. Sem o parâmetro, a ordem continua sendo a do catálogo. A ordenação entra depois do filtro de `q` e antes do recorte de `limit`/`offset`, ignora maiúsculas e acentos na ordem do português, e não altera o `X-Total-Count`.
 - Validação de `sort`, com resposta 400 e a mensagem `sort: informe nome ou -nome` para qualquer outro valor.
 - Endpoint `GET /api/v1/health`, que responde 200 com `status` (`ok`) e `version` (a versão do `package.json`). É o caminho para balanceador e monitor apontarem.
+
+### Corrigido
+
+- `PORT` passa a ser validada como porta válida (inteiro de 1 a 65535). Antes, qualquer número era aceito e o erro só aparecia na subida do servidor.
 
 ### Removido
 
