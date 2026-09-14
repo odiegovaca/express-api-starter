@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+
 import request from "supertest";
 import { describe, expect, it } from "vitest";
 
@@ -10,14 +12,37 @@ const CATALOGO = [
 ];
 
 describe("GET /api/v1", () => {
-  it("responds with a json message", () =>
+  it("no longer responds: the decorative route was removed", () =>
     request(app)
       .get("/api/v1")
       .set("Accept", "application/json")
       .expect("Content-Type", /json/)
-      .expect(200, {
-        message: "API - 👋🌎🌍🌏",
-      }));
+      .expect(404));
+});
+
+describe("GET /api/v1/health", () => {
+  it("responds ok with the package version", async () => {
+    const { version } = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
+    const res = await request(app)
+      .get("/api/v1/health")
+      .expect("Content-Type", /json/)
+      .expect(200);
+
+    expect(res.body).toEqual({ status: "ok", version });
+  });
+
+  // RN07: o endpoint e publico. Um caminho absoluto ou o nome de uma dependencia
+  // na resposta ja seria vazamento.
+  it("leaks neither file path nor dependency name", async () => {
+    const res = await request(app).get("/api/v1/health").expect(200);
+    const corpo = JSON.stringify(res.body);
+    expect(corpo).not.toContain("node_modules");
+    expect(corpo).not.toContain("express");
+    expect(Object.keys(res.body).sort()).toEqual(["status", "version"]);
+  });
+
+  it("ignores a query string instead of rejecting it", () =>
+    request(app).get("/api/v1/health?qualquer=coisa").expect(200));
 });
 
 describe("GET /api/v1/emojis", () => {
