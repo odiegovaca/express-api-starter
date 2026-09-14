@@ -96,7 +96,14 @@ describe("GET /api/v1/emojis", () => {
 });
 
 describe("GET /api/v1/emojis?sort", () => {
-  const POR_NOME = [...CATALOGO].sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
+  // Ordem escrita a mao, nao derivada de um comparador: derivar com
+  // localeCompare repetiria a regra em vez de prova-la, e com sensitivity
+  // diferente da producao.
+  const POR_NOME = [
+    CATALOGO[2], // revirando
+    CATALOGO[1], // ruborizado
+    CATALOGO[0], // sorriso
+  ];
 
   it("sorts by name ascending", async () => {
     const res = await request(app).get("/api/v1/emojis?sort=nome").expect(200);
@@ -109,6 +116,14 @@ describe("GET /api/v1/emojis?sort", () => {
   });
 
   it("keeps the catalogue order when sort is absent", async () => {
+    const res = await request(app).get("/api/v1/emojis").expect(200);
+    expect(res.body).toEqual(CATALOGO);
+  });
+
+  // Regressao #4: sort ordenava no lugar e reordenava o catalogo compartilhado.
+  // A ordem tem de ser a original mesmo DEPOIS de uma request ordenada.
+  it("does not let a sorted request reorder the catalogue", async () => {
+    await request(app).get("/api/v1/emojis?sort=nome").expect(200);
     const res = await request(app).get("/api/v1/emojis").expect(200);
     expect(res.body).toEqual(CATALOGO);
   });
@@ -129,6 +144,16 @@ describe("GET /api/v1/emojis?sort", () => {
   it("keeps X-Total-Count as the post-filter total when sort is given", async () => {
     const res = await request(app).get("/api/v1/emojis?q=r&sort=-nome").expect(200);
     expect(res.headers["x-total-count"]).toBe("3");
+  });
+
+  // RN04: a comparacao ignora caixa e acento, na ordem do portugues. Sem este
+  // teste, trocar o Intl.Collator por comparacao de string crua passaria verde.
+  it.each([
+    [["Zebra", "acido", "ácido", "Banana"], ["acido", "ácido", "Banana", "Zebra"]],
+    [["ovo", "Ovo", "avo"], ["avo", "ovo", "Ovo"]],
+  ])("orders %j as %j, ignoring case and accent", (entrada, esperado) => {
+    const colacao = new Intl.Collator("pt-BR", { sensitivity: "base" });
+    expect([...entrada].sort((a, b) => colacao.compare(a, b))).toEqual(esperado);
   });
 
   it("rejects an unknown sort value naming the parameter", async () => {

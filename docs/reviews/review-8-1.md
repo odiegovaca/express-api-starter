@@ -2,9 +2,9 @@
 
 **Data:** 2026-09-14-193153
 
-**Estatísticas:** 0 critical, 1 high, 1 medium, 1 low
+**Estatísticas:** 1 critical, 1 high, 1 medium, 1 low
 
-**Veredito:** APROVADO COM RESSALVAS
+**Veredito:** REPROVADO
 
 ## Análise por Arquivo
 
@@ -51,11 +51,32 @@ return MENSAGENS[campo] ?? `${campo}: valor invalido`;
 
 **Solução:** Manter, e deixar a intenção explícita — um comentário de uma linha dizendo que a branch é deliberadamente inalcançável enquanto todo campo tiver mensagem evita que uma futura caçada a cobertura de branch a remova.
 
+#### Problema 4 — CRITICAL
+
+**Local:** `src/api/emojis.js:66`
+
+```js
+const ordenados = sort === undefined
+  ? filtrados
+  : filtrados.sort((a, b) => sort === "-nome"
+      ? colacao.compare(b.name, a.name)
+      : colacao.compare(a.name, b.name));
+```
+
+**Explicação:** `Array.prototype.sort` ordena **no lugar**. Quando `q` não é informado, `filtrados` **é** a própria constante `EMOJIS` do módulo — não uma cópia. Uma única requisição `GET /api/v1/emojis?sort=nome` reordena o catálogo compartilhado de forma permanente, para todas as requisições seguintes do processo, inclusive as que não pedem ordenação. O critério de aceite "Sistema devolve a ordem original do catálogo quando a requisição não traz `sort`" passa a ser falso a partir da primeira requisição ordenada, e o estado só volta ao normal com um restart.
+
+Num catálogo em memória o estrago é a ordem; no mesmo padrão sobre uma coleção mutável carregada de banco ou cache, é corrupção de dados compartilhados entre requisições — daí a severidade.
+
+**A suíte não pega isso, e vale entender por quê:** no bloco `GET /api/v1/emojis?sort`, o teste de ordem decrescente roda logo antes do teste de ordem original e, por coincidência do catálogo atual (`sorriso`, `ruborizado`, `revirando`), a ordem decrescente por nome **é** a ordem original. A mutação do teste anterior é desfeita pela do seguinte, e os 32 testes passam verdes sobre o código defeituoso.
+
+**Solução:** Ordenar sobre uma cópia — `[...filtrados].sort(...)` — e fechar o buraco de teste com um caso que faça uma requisição ordenada e, **na sequência**, uma sem `sort`, afirmando a ordem original. Sem esse teste, a correção não fica travada.
+
 ## Recomendações
 
 ### Must Have (bloqueantes)
 
 - Problema 1 — HIGH
+- Problema 4 — CRITICAL
 
 ### Should Have
 
@@ -64,3 +85,9 @@ return MENSAGENS[campo] ?? `${campo}: valor invalido`;
 ### Nice to Have
 
 - Problema 3 — LOW
+
+## Pós-fix
+
+**Correções aplicadas:** #1, #4
+**Status pós-fix:** revisar
+**Bloqueantes pendentes:** nenhum

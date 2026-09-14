@@ -61,9 +61,12 @@ router.get("/", (req, res) => {
 
   // RN03: ordenar entre o filtro e o recorte. Depois do recorte, so a pagina
   // ficaria ordenada, e a segunda traria nomes menores que a primeira.
+  // A copia nao e adorno: `filtrados` e a propria constante EMOJIS quando `q`
+  // nao veio, e o sort ordena no lugar — uma request reordenaria o catalogo
+  // compartilhado para todas as seguintes.
   const ordenados = sort === undefined
     ? filtrados
-    : filtrados.sort((a, b) => sort === "-nome"
+    : [...filtrados].sort((a, b) => sort === "-nome"
         ? colacao.compare(b.name, a.name)
         : colacao.compare(a.name, b.name));
 
