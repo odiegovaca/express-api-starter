@@ -11,6 +11,9 @@ export function errorHandler(err, req, res, _next) {
   res.status(statusCode);
   res.json({
     message: err.message,
-    stack: env.NODE_ENV === "production" ? "🥞" : err.stack,
+    // Lista de permissao, nao de negacao: so "development" ve a pilha. Com a
+    // regra invertida, qualquer NODE_ENV inesperado (test, staging, vazio)
+    // caia no ramo que vaza caminho absoluto e versao de dependencia.
+    stack: env.NODE_ENV === "development" ? err.stack : "🥞",
   });
 }
