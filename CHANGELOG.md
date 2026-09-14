@@ -2,6 +2,8 @@
 
 ## [4.0.0-rc.2] - Unreleased
 
+## [4.0.0] - 14/09/2026
+
 ### Adicionado
 
 - Parâmetro `sort` em `GET /api/v1/emojis`, com os valores `nome` e `-nome`, que devolve a listagem ordenada pelo nome do emoji em ordem crescente ou decrescente. Sem o parâmetro, a ordem continua sendo a do catálogo. A ordenação entra depois do filtro de `q` e antes do recorte de `limit`/`offset`, ignora maiúsculas e acentos na ordem do português, e não altera o `X-Total-Count`.
