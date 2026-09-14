@@ -1,6 +1,6 @@
 # Changelog
 
-## [3.1.0-rc.2] - Unreleased
+## [4.0.0-rc.1] - Unreleased
 
 ### Adicionado
 
