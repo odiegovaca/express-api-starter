@@ -54,5 +54,5 @@ pnpm run dev
 
 ## API
 
-- `GET /api/v1` — estado da API
+- `GET /api/v1/health` — estado da API, com `status` e `version`
 - `GET /api/v1/emojis` — catalogo, com `q`, `sort`, `limit` e `offset`
