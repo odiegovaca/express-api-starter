@@ -94,3 +94,36 @@ describe("GET /api/v1/emojis", () => {
     expect(res.body.message).toContain(campo);
   });
 });
+
+describe("GET /api/v1/emojis?sort", () => {
+  const POR_NOME = [...CATALOGO].sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
+
+  it("sorts by name ascending", async () => {
+    const res = await request(app).get("/api/v1/emojis?sort=nome").expect(200);
+    expect(res.body).toEqual(POR_NOME);
+  });
+
+  it("sorts by name descending", async () => {
+    const res = await request(app).get("/api/v1/emojis?sort=-nome").expect(200);
+    expect(res.body).toEqual([...POR_NOME].reverse());
+  });
+
+  it("keeps the catalogue order when sort is absent", async () => {
+    const res = await request(app).get("/api/v1/emojis").expect(200);
+    expect(res.body).toEqual(CATALOGO);
+  });
+
+  it("sorts before slicing", async () => {
+    const res = await request(app).get("/api/v1/emojis?sort=nome&limit=1").expect(200);
+    expect(res.body).toEqual([POR_NOME[0]]);
+  });
+
+  it("rejects an unknown sort value naming the parameter", async () => {
+    const res = await request(app)
+      .get("/api/v1/emojis?sort=char")
+      .expect("Content-Type", /json/)
+      .expect(400);
+
+    expect(res.body.message).toBe("sort: informe nome ou -nome");
+  });
+});
