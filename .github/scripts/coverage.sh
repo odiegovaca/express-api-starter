@@ -15,28 +15,25 @@ COVERAGE_TARGET="85"
 read_coverage() {
   [ -f "$COVERAGE_REPORT" ] || return 1
   node -e '
-    const s = require("fs").readFileSync(process.argv[1], "utf8");
-    const pct = JSON.parse(s).total.statements.pct;
-    if (typeof pct !== "number") process.exit(1);
-    console.log(pct);
+    const fs = require("fs");
+    const dados = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+    console.log(dados.total.statements.pct);
   ' "$COVERAGE_REPORT"
 }
 
 # Insumo do --priority, via rank_priority() abaixo.
 read_coverage_by_file() {
   [ -f "$COVERAGE_REPORT" ] || return 1
-  # As chaves do json-summary sao caminhos absolutos do SO; o fases() cruza esta
-  # saida com a do changed-files.sh (relativo, barra normal), entao normaliza aqui.
-  ROOT="$(git rev-parse --show-toplevel)" node -e '
-    const path = require("node:path");
-    const s = require("fs").readFileSync(process.argv[1], "utf8");
-    const root = process.env.ROOT;
-    for (const [file, m] of Object.entries(JSON.parse(s))) {
-      if (file === "total") continue;
-      const rel = path.relative(root, file).split(path.sep).join("/");
-      console.log([rel, m.statements.pct, m.statements.total].join(","));
+  node -e '
+    const fs = require("fs"), path = require("path");
+    const raiz = process.argv[2];
+    const dados = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+    for (const [arquivo, m] of Object.entries(dados)) {
+      if (arquivo === "total") continue;
+      const rel = path.relative(raiz, arquivo).split(path.sep).join("/");
+      console.log(rel + "," + m.statements.pct + "," + m.statements.total);
     }
-  ' "$COVERAGE_REPORT"
+  ' "$COVERAGE_REPORT" "$(git rev-parse --show-toplevel)"
 }
 
 # Avisa em stderr quando o relatório é mais velho que o último commit — mede código
@@ -110,6 +107,17 @@ fases() {
   ranked="$(cat)"
   fase1="$(grep -F -f <(printf '%s\n' "$alterados") <<< "$ranked" || true)"
   fase2="$(grep -F -v -f <(printf '%s\n' "$alterados") <<< "$ranked" | head -10 || true)"
+
+  # FASE1 vazia por formato de caminho incompatível passa despercebida — o --priority
+  # segue plausível, só que todo em FASE2. O teste do arquivo separa isso de uma branch só de doc.
+  if [ -z "$fase1" ] && [ -n "$ranked" ]; then
+    local amostra
+    amostra="$(head -1 <<< "$ranked" | cut -d, -f1)"
+    if [ ! -e "$amostra" ]; then
+      echo "Aviso: nenhum arquivo da branch casou com o relatório de cobertura, e o primeiro caminho dele ('$amostra') não existe a partir da raiz do repositório." >&2
+      echo "       Confira read_coverage_by_file em coverage.sh: o caminho tem de ser relativo à raiz do repositório e com \"/\"." >&2
+    fi
+  fi
 
   echo "FASE1:"
   [ -z "$fase1" ] || printf '%s\n' "$fase1"

@@ -4,10 +4,7 @@
 
 ## Project Overview
 
-Template inicial de API HTTP em JavaScript sobre Express 5, pensado para quem vai
-começar um serviço novo e quer os middlewares de base (log, segurança, CORS, JSON)
-e o tratamento de erro já montados. A linguagem é JavaScript em módulos ES nativos
-do Node, sem etapa de transpilação.
+Template inicial de API HTTP em JavaScript sobre Express 5, para quem vai começar um serviço novo e quer os middlewares de base (log de requisição, cabeçalhos de segurança, CORS, corpo JSON) e o tratamento de erro já montados. A única rota de domínio é um catálogo de emojis em memória, servida como exemplo de listagem com filtro e paginação. A linguagem é JavaScript em módulos ES nativos do Node, sem etapa de transpilação.
 
 ---
 
@@ -17,17 +14,22 @@ do Node, sem etapa de transpilação.
 
 - **Language/Runtime**: JavaScript (ESM) sobre Node 26
 - **Framework**: Express 5
-- **Database**: nenhum
+- **Database**: nenhum — o catálogo é uma constante em memória (`EMOJIS` em `src/api/emojis.js`)
 - **Auth**: nenhum
-- **Observability**: `morgan` no formato `dev` para log de requisição HTTP; sem métrica e sem trace
-- **Testing**: Vitest 4 como runner, `supertest` para exercitar o app HTTP; sem biblioteca de mock
+- **Observability**: log de requisição HTTP via `morgan("dev")` em `src/app.js`; nenhuma métrica e nenhum trace
+- **Testing**: Vitest como runner, `supertest` para exercitar o app HTTP; nenhuma biblioteca de mock — os testes chamam o app de verdade
 
 ### Module/Package Structure
 
 ```
-src/          raiz da aplicação: app.js (montagem do Express), index.js (listen), env.js (variáveis validadas), middlewares.js (notFound e errorHandler)
-src/api/      routers da API versionada: index.js monta /api/v1 e agrega os routers de recurso; um arquivo por recurso (emojis.js)
-test/         testes de integração HTTP, um arquivo por alvo (api.test.js, app.test.js)
+src/          ponto de entrada (index.js), montagem do app (app.js), leitura
+              validada do ambiente (env.js) e os middlewares de 404/erro
+              (middlewares.js)
+src/api/      as rotas expostas — index.js monta o router de /api/v1 e
+              emojis.js implementa o catálogo
+test/         testes de integração HTTP, um arquivo por área (app, api)
+docs/issues/  specs de feature geradas pelo /spec
+docs/reviews/ relatórios de revisão gerados pelo /review
 ```
 
 ---
@@ -36,21 +38,22 @@ test/         testes de integração HTTP, um arquivo por alvo (api.test.js, app
 
 ### Exception Handling
 
-O projeto não define tipos de erro próprios: usa `Error` nativo e delega ao
-`errorHandler` do Express, que é o único lugar que formata a resposta. Quem quer
-sinalizar erro fixa o status na resposta e chama `next(error)`:
+O projeto usa `Error` nativo e o funil de erro do Express: quem não encontra rota cria o erro e passa adiante, e um único `errorHandler` transforma qualquer erro em resposta JSON. O status vem do que já foi marcado na resposta, com 500 como padrão:
 
 ```js
-export function notFound(req, res, next) {
-  res.status(404);
-  const error = new Error(`🔍 - Not Found - ${req.originalUrl}`);
-  next(error);
+export function errorHandler(err, req, res, _next) {
+  const statusCode = res.statusCode !== 200 ? res.statusCode : 500;
+  res.status(statusCode);
+  res.json({
+    message: err.message,
+    stack: env.NODE_ENV === "development" ? err.stack : "🥞",
+  });
 }
 ```
 
-O `errorHandler` é registrado por último em `app.js` e devolve sempre
-`{ message, stack }` — a `stack` vira `"🥞"` quando `NODE_ENV === "production"`.
-Status: o que já estiver na resposta, ou 500 quando ainda for 200.
+O formato da resposta de erro é sempre `{ "message": string, "stack": string }` — a pilha só é real em `development`; em qualquer outro ambiente vai o literal `"🥞"`.
+
+**Exceção deliberada:** erro de validação de query responde direto no handler, sem passar pelo `errorHandler`, porque ali a pilha vazaria caminho absoluto e versão de dependência num 400 público (ver `src/api/emojis.js`).
 
 ### Authentication Pattern
 
@@ -58,25 +61,24 @@ Não se aplica — o projeto não tem autenticação.
 
 ### Logging
 
-Log de requisição por `morgan("dev")`, registrado em `app.js` antes dos demais
-middlewares. Não há logger de aplicação: fora do `morgan`, o projeto só usa
-`console.error` no bootstrap (`env.js`, `index.js`), e o ESLint trata
-`no-console` como `warn` justamente para que isso não se espalhe pelo `src/api`.
-Nunca logar corpo de requisição nem header de autorização.
+Não há logger de aplicação. O único log é o de requisição, montado uma vez em `src/app.js`:
+
+```js
+app.use(morgan("dev"));
+```
+
+Erro de bootstrap sai por `console.error` em `src/env.js`, antes de o app subir. Nunca logar valor de variável de ambiente, nem o conteúdo de `process.env`: o `env.js` só nomeia a variável que faltou, não o que ela continha.
 
 ### Environment Variables
 
-- `NODE_ENV` — modo de execução (`development` | `production` | `test`); default `development`. Controla se a stack de erro vai na resposta.
-- `PORT` — porta do servidor HTTP; default `3000`, convertida para número por `z.coerce.number()`.
+- `NODE_ENV` — decide se a resposta de erro carrega a pilha. Valores aceitos: `development`, `production`, `test`. Ausente equivale a `production` (default seguro).
+- `PORT` — porta do servidor HTTP. Default `3000`, convertida para número pelo schema.
 
-Leitura: `import { env } from "./env.js"`. O `process.env` é lido em um único
-lugar (`src/env.js`), validado por schema Zod na carga do módulo — o ESLint
-proíbe `process.env` no resto do código (`node/no-process-env`), com
-`eslint-disable-next-line` apenas nas duas linhas de `env.js`.
+Ambas são lidas **exclusivamente** por `src/env.js`, que valida com Zod e exporta o objeto `env`. No resto do código, importar `env` — nunca ler `process.env` direto (as duas únicas leituras diretas existem em `env.js` e estão marcadas com `eslint-disable-next-line node/no-process-env`).
 
 ### Database / Repository Pattern
 
-Não se aplica — o projeto não tem banco nem camada de persistência.
+Não se aplica — não há banco. O catálogo é a constante `EMOJIS` em `src/api/emojis.js`, filtrada e recortada em memória no próprio handler.
 
 ---
 
@@ -88,10 +90,9 @@ Checklist derivado das seções acima — vale para toda implementação ou corr
 - **Logging**: usar o logger do projeto, nunca escrita direta em stdout/stderr em produção
 - **Variáveis de ambiente**: sempre via função/método helper do projeto, nunca lendo o ambiente direto
 - **Segurança**: nunca logar tokens, senhas ou dados pessoais
-- **ESM com extensão**: todo import relativo termina em `.js` (`./api/index.js`) — o Node ESM não resolve extensão sozinho e o erro só aparece em runtime
-- **Ordem dos middlewares**: `notFound` e `errorHandler` ficam por último em `app.js`; um `app.use` registrado depois deles nunca é alcançado
-- **Router por recurso**: recurso novo vira arquivo em `src/api/` e é montado no `src/api/index.js`, não direto no `app.js`
-- **Estilo travado pelo lint**: aspas duplas, ponto e vírgula, indentação 2, arquivos em kebab-case e imports ordenados — `pnpm run lint` corrige, mas o commit sai errado se não rodar
+- **Validação de entrada**: toda query, corpo ou parâmetro de rota passa por um schema Zod com `safeParse`, e a resposta 400 nomeia o parâmetro recusado — nunca ler `req.query` cru
+- **ESM explícito**: todo import relativo leva a extensão `.js`; sem ela o Node não resolve o módulo
+- **Ordem dos middlewares**: `notFound` e `errorHandler` são sempre os últimos `app.use` — registrar rota depois deles a torna inalcançável
 
 ---
 
@@ -110,7 +111,7 @@ Falha três vezes seguidas no mesmo erro, em qualquer comando, é sinal de parar
 pnpm install
 
 # Executar em desenvolvimento
-pnpm run dev
+pnpm dev
 
 # Executar testes
 pnpm test
@@ -119,10 +120,10 @@ pnpm test
 pnpm test
 
 # Lint / formatação
-pnpm run lint
+pnpm lint
 
 # Build
-# nenhum — Node ESM roda direto da fonte, sem bundler nem transpilação
+# não há etapa de build: JavaScript ESM roda direto no Node
 ```
 
 **Caminho do relatório de cobertura:** ver `COVERAGE_REPORT` em `.github/scripts/coverage.sh`
@@ -131,9 +132,7 @@ pnpm run lint
 
 ## Integration Points
 
-Nenhuma — o projeto não chama serviço externo nem é chamado por um. As únicas
-dependências de runtime são bibliotecas in-process (Express, helmet, cors,
-morgan, zod).
+Nenhuma — o projeto não chama nenhum sistema externo e não é chamado por nenhum cliente conhecido.
 
 ---
 
@@ -141,32 +140,27 @@ morgan, zod).
 
 <!-- Adicione aqui erros recorrentes via /lesson -->
 
-- `import { z } from "zod/v4"` — o projeto usa o subcaminho `v4` do zod, não a raiz; copiar `from "zod"` de exemplo de fora compila e só quebra na validação
-- Coberturas de `src/index.js` e do bloco `catch` de `env.js` chamam `process.exit`: teste que as exercite mata o processo do Vitest. `src/index.js` está excluído da cobertura por isso
-- `@vitest/coverage-v8` precisa casar a versão *exata* do `vitest` — com o range `^` o pnpm resolve uma minor à frente e o runner morre em `BaseCoverageProvider` não exportado
-- O `coverage-summary.json` indexa por caminho absoluto do SO; qualquer leitor que cruze com saída de `git diff` precisa converter para relativo com barra normal
+- `NODE_ENV` ausente equivale a `production`, não a `development`: rodar local sem o `.env` faz a resposta de erro sair sem pilha, e parece bug de teste.
+- O `errorHandler` deriva o status de `res.statusCode`: responder um erro sem ter marcado o status antes vira 500, mesmo quando a intenção era 400.
+- `pnpm lint` roda `eslint --fix`, que **altera arquivos**. Rodar lint no meio de uma revisão de diff mistura correção automática com a mudança da feature.
 
 ---
 
 ## Testing Conventions
 
-Teste de integração HTTP: monta o `app` real e exercita a rota por `supertest`,
-sem mock — não há camada externa para simular. Um arquivo por alvo em `test/`,
-nomeado `<alvo>.test.js`, com um `describe` por rota nomeado `"MÉTODO /caminho"`:
+Os testes ficam em `test/`, um arquivo por área, nomeados `<area>.test.js`. São testes de integração HTTP: importam o `app` montado e o exercitam com `supertest`, sem mock — não há dependência externa para dublar.
 
 ```js
 import request from "supertest";
-import { describe, it } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import app from "../src/app.js";
 
 describe("GET /api/v1/emojis", () => {
-  it("responds with a json message", () =>
+  it("cuts the collection with limit", () =>
     request(app)
-      .get("/api/v1/emojis")
-      .set("Accept", "application/json")
-      .expect("Content-Type", /json/)
-      .expect(200, ["😀", "😳", "🙄"]));
+      .get("/api/v1/emojis?limit=2")
+      .expect(200, CATALOGO.slice(0, 2)));
 });
 ```
 
@@ -178,6 +172,6 @@ describe("GET /api/v1/emojis", () => {
 
 - **Branches**: ver `.github/scripts/release-branches.sh`
 - **Features**: `feature/{N}-nome-descritivo` a partir da branch de integração — `{N}` é o número da issue, e é por ele que `/review` e `/fix-review` acham o relatório da feature
-- **Versionamento**: SemVer em `X.Y.Z`, com sufixo `-rc.N` durante o ciclo de desenvolvimento (cada `/rc` incrementa o `N`); o `/release` remove o sufixo e publica a versão estável
+- **Versionamento**: SemVer no campo `version` do `package.json`; o sufixo de pré-lançamento `-rc.N` é usado do primeiro `/rc` do ciclo até o `/release`, que o remove
 - **Arquivos de versão**: ver `VERSION_FILES` em `.github/scripts/bump-version.sh`
 - **CHANGELOG no desenvolvimento**: uma única seção por ciclo, sempre consolidada — cada RC reescreve a do topo com o delta acumulado, header na versão RC atual e `Unreleased` no lugar da data; o `/release` troca esse header pela versão final

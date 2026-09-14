@@ -15,13 +15,12 @@ run_test() {
 }
 
 run_lint() {
-  pnpm run lint
+  pnpm lint
 }
 
 run_build() {
-  # Node ESM rodado direto da fonte (`node src/index.js`): o projeto nao tem
-  # etapa de build. No-op explicito para o /rc e o /release nao pararem aqui.
-  echo "Projeto sem etapa de build (Node ESM, sem bundler) — nada a fazer."
+  # JavaScript ESM roda direto no Node: nao ha etapa de transpilacao.
+  echo "Sem etapa de build neste projeto."
 }
 
 if [ "$#" -eq 0 ]; then

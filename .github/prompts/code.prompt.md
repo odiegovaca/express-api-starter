@@ -28,39 +28,25 @@ argument-hint: "Caminho da spec ou descrição da funcionalidade"
 
 Cada fase segue os padrões de `copilot-instructions.md` e só termina com o código dela conforme a seção "Padrões Obrigatórios".
 
-#### 2.1 — Dados em Memória (se houver)
+#### 2.1 — Dados em memória (se houver)
 
-O projeto não tem banco: o estado de um recurso mora em módulo próprio sob `src/api/`,
-exportado como estrutura JS. Quando a feature precisar de dados, definir aqui a forma
-do registro e a origem (constante, arquivo estático ou memória de processo), antes de
-qualquer rota tocá-la.
+A coleção ou constante que a feature consulta, em `src/api/<area>.js`, junto do handler que a usa. Não há banco nem migration neste projeto: o dado nasce como estrutura JavaScript no módulo da rota.
 
-#### 2.2 — Schema e Lógica de Negócio
+#### 2.2 — Schema de validação e regra de negócio
 
-Schema Zod para toda entrada que vem do cliente (body, query, params) — é o zod que
-valida campo, não `if` manual. A transformação/derivação fica em função pura,
-separada do handler. Erro esperado vira `Error` com o status fixado na resposta antes
-do `next(error)`, conforme Exception Handling de `copilot-instructions.md`.
+O schema Zod da entrada (`z.object({...})`) e as funções puras que filtram, ordenam ou recortam a coleção. Toda query, corpo e parâmetro de rota passa por `safeParse` — nunca por leitura crua de `req.query`. A mensagem de recusa é indexada por campo (ver `MENSAGENS` em `src/api/emojis.js`), para que acrescentar um parâmetro não faça a mensagem de outro responder por ele.
 
 #### 2.3 — Rota
 
-Router Express do recurso em `src/api/<recurso>.js`, montado no `src/api/index.js`
-sob `/api/v1` — nunca direto no `app.js`. Status correto por operação
-(200 leitura, 201 criação, 400 entrada inválida, 404 inexistente).
+O handler no `express.Router()` do módulo da área, registrado no router de `/api/v1` em `src/api/index.js`. Status correto por caso: 200 na leitura, 400 com o parâmetro nomeado na entrada inválida. Erro de validação responde direto no handler, sem `next(error)` — pelo `errorHandler` a resposta levaria a pilha junto.
 
 #### 2.4 — Configuração
 
-Variável de ambiente nova entra no schema de `src/env.js` e no `.env.sample`;
-dependência nova entra no `package.json`. Ajustar o `README.md` quando a rota
-for parte da superfície pública do template.
+Variável de ambiente nova entra no schema de `src/env.js` (com default seguro) e no `.env.sample`; rota nova entra na seção `API` do `README.md`. Não há container de dependências.
 
 #### 2.5 — Testes Básicos
 
-Testes de integração HTTP em `test/<alvo>.test.js` com `supertest` sobre o `app`
-real — sem mock, porque não há dependência externa a simular. Cobrir o happy path de
-cada rota nova e os erros que a spec prevê (entrada inválida, recurso inexistente).
-Estrutura, nomes e localização seguem a seção Testing Conventions de
-`copilot-instructions.md`.
+Testes de integração HTTP em `test/<area>.test.js`, com `supertest` sobre o `app` importado de `../src/app.js`, cobrindo o caminho feliz de cada rota e cada recusa 400 que a spec prevê. Sem mock: não há dependência externa para dublar. Estrutura, nomes e localização seguem a seção Testing Conventions de `copilot-instructions.md`.
 
 > Testes de borda, cobertura de branches e casos extras ficam para o `/test`.
 
