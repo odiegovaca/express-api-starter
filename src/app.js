@@ -11,7 +11,7 @@ const app = express();
 
 app.use(morgan("dev"));
 app.use(helmet());
-app.use(cors()); // ajuste vindo da integracao
+app.use(cors()); // ajuste vindo da producao e da integracao
 app.use(express.json());
 
 app.use("/api/v1", api);
