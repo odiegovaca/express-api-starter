@@ -5,7 +5,7 @@ const envSchema = z.object({
   // Com o default anterior ("development"), esquecer a variavel no deploy fazia
   // o errorHandler devolver a pilha completa em todo 404 e 400.
   NODE_ENV: z.enum(["development", "production", "test"]).default("production"),
-  PORT: z.coerce.number().default(3000),
+  PORT: z.coerce.number().int().min(1).max(65535).default(3000),
 });
 
 try {
