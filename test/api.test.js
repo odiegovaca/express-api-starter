@@ -47,12 +47,13 @@ describe("GET /api/v1/emojis", () => {
       .get("/api/v1/emojis?offset=99")
       .expect(200, []));
 
-  it("reports the full collection size in X-Total-Count", async () => {
-    for (const query of ["", "?limit=2", "?offset=1", "?limit=1&offset=1", "?offset=99"]) {
+  it.each(["", "?limit=2", "?offset=1", "?limit=1&offset=1", "?offset=99"])(
+    "reports the full collection size in X-Total-Count for %s",
+    async (query) => {
       const res = await request(app).get(`/api/v1/emojis${query}`);
       expect(res.headers["x-total-count"]).toBe("3");
-    }
-  });
+    },
+  );
 
   it.each([
     ["limit=0", "limit"],

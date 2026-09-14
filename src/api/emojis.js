@@ -8,24 +8,34 @@ const listQuerySchema = z.object({
   offset: z.coerce.number().int().min(0).optional(),
 });
 
-// A mensagem nomeia o parametro recusado: sem isso o cliente recebe "entrada
-// invalida" e tem de adivinhar qual dos dois recortes estava errado.
+// Indexado pelo campo: o schema pode ganhar um terceiro parametro sem que a
+// mensagem de outro passe a responder por ele.
+const MENSAGENS = {
+  limit: "limit: informe um numero inteiro entre 1 e 100",
+  offset: "offset: informe um numero inteiro maior ou igual a 0",
+};
+
 function describeIssue(issue) {
   const campo = issue.path[0];
-  if (campo === "limit") {
-    return "limit: informe um numero inteiro entre 1 e 100";
-  }
-  return "offset: informe um numero inteiro maior ou igual a 0";
+  return MENSAGENS[campo] ?? `${campo}: valor invalido`;
 }
 
 const router = express.Router();
 
-router.get("/", (req, res, next) => {
+router.get("/", (req, res) => {
+  // Antes da validacao: o Requisito 4 pede o total em toda resposta da listagem,
+  // e o ramo de erro sai daqui sem passar pelo fim da funcao.
+  res.set("X-Total-Count", String(EMOJIS.length));
+
   const parsed = listQuerySchema.safeParse(req.query);
 
   if (!parsed.success) {
-    res.status(400);
-    next(new Error(parsed.error.issues.map(describeIssue).join("; ")));
+    // Responde direto em vez de passar pelo errorHandler: la a resposta levaria
+    // a pilha junto sempre que NODE_ENV nao for "production", e o default e
+    // "development" — caminho absoluto e versao de dependencia num 400 publico.
+    res.status(400).json({
+      message: parsed.error.issues.map(describeIssue).join("; "),
+    });
     return;
   }
 
@@ -34,7 +44,6 @@ router.get("/", (req, res, next) => {
     ? EMOJIS.slice(offset)
     : EMOJIS.slice(offset, offset + limit);
 
-  res.set("X-Total-Count", String(EMOJIS.length));
   res.json(recorte);
 });
 
