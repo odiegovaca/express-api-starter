@@ -51,7 +51,7 @@ read_version() {
 
 # Como o projeto grava a versão, antes do write_version() porque acertar todos os
 # lugares em que ela aparece é conhecimento do projeto, não do dev-looper.
-SET_VERSION_CMD="pnpm version {} --no-git-tag-version"
+SET_VERSION_CMD="npm version {} --no-git-tag-version --allow-same-version"
 
 # Fallback de quem não tem ferramenta própria. O `0,/re/s//` troca só a primeira
 # ocorrência: a versão do projeto vem antes das dependências.
