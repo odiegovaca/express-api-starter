@@ -10,15 +10,11 @@ describe("app", () => {
       .set("Accept", "application/json")
       .expect("Content-Type", /json/)
       .expect(404));
-});
 
-describe("GET /", () => {
-  it("responds with a json message", () =>
+  it("no longer serves the root endpoint", () =>
     request(app)
       .get("/")
       .set("Accept", "application/json")
       .expect("Content-Type", /json/)
-      .expect(200, {
-        message: "🦄🌈✨👋🌎🌍🌏✨🌈🦄",
-      }));
+      .expect(404));
 });
