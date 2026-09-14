@@ -1,6 +1,6 @@
 # Prompts — Guia Rápido
 
-> Fluxo do [dev-looper](https://github.com/odiegovaca/dev-looper), versão de origem `v3.0.0-10-gdc2433a`.
+> Fluxo do [dev-looper](https://github.com/odiegovaca/dev-looper), versão de origem `v3.0.0-12-g1f77708`.
 
 ## Fluxo Completo (Nova Funcionalidade)
 
